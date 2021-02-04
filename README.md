@@ -13,15 +13,13 @@
 ## 3. Exporter和EMR集群的集成
 ### 3.1 Graphite Exporter
 	纯文本协议中导出的指标的导出器。 它通过TCP和UDP接收数据，并进行转换并将其公开以供Prometheus使用。该导出器对于从现有Graphite设置导出度量标准以及核心Prometheus导出器（例如Node Exporter）未涵盖的度量标准非常有用。https://github.com/prometheus/graphite_exporter, 下面是安装 Graphite Exporter 的流程:
-#### step 1	
-	# Download node_exporter release from original repo
+#### step 1 Download node_exporter release from original repo
 	curl -L -O  https://github.com/prometheus/graphite_exporter/releases/download/v0.9.0/graphite_exporter-0.9.0.linux-amd64.tar.gz
 	tar -xzvf graphite_exporter-0.9.0.linux-amd64.tar.gz
 	sudo cp graphite_exporter-0.9.0.linux-amd64/graphite_exporter /usr/local/bin/
 	rm -rf graphite_exporter-0.9.0.linux-amd64.tar.gz
 	rm -rf graphite_exporter-0.9.0.linux-amd64
-#### step 2
-	# Add graphite_exporter's mapping file
+#### step 2 Add graphite_exporter's mapping file
 	sudo mkdir -p /etc/graphite_exporter
 	sudo tee /etc/graphite_exporter/graphite_exporter_mapping << END
 	mappings:
@@ -77,8 +75,7 @@
 	    qty: \$2
 	END
 
-#### step 3
-	# Add graphite_exporter as systemd service
+#### step 3 Add graphite_exporter as systemd service
 	sudo tee /etc/systemd/system/graphite_exporter.service << END
 	[Unit]
 	Description=Graphite Exporter
@@ -103,7 +100,7 @@
 
 ### 3.2 JMX Exporter
 	JMX到Prometheus导出器：一个收集器，该收集器可以可配置地抓取和公开JMX目标的mBean。该导出程序旨在作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
-	它也可以作为独立的HTTP服务器运行，并刮擦远程JMX目标，但这有许多缺点，例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。 
+	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标，但这有许多缺点，例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。 
 	因此，强烈建议将导出程序作为Java代理运行。
 	https://github.com/prometheus/jmx_exporter
 
@@ -119,6 +116,11 @@
 
 
 ## 4. 指标的收集
+	因为Prometheus只支持pull模式的方式去收集数据，所以我们需要通过声明Prometheus配置文件中的scrape_configs，
+	来指定Prometheus在运行时需要拉取指标的目标，目标实例需要实现一个可以被Prometheus进行轮询的端点接口，而Exporter正是用来提供这样接口的，
+	比如用来拉取操作系统指标的Node Exporter，它会从操作系统上收集硬件指标，供Prometheus来拉取。Prometheus pull时，
+	可以通过static_configs参数配置静态配置目标，也可以使用受支持的服务发现机制之一动态发现目标。下面是一个完整的Prometheus配置：
+	
 	global:
 	  #How frequently to scrape targets
 	  scrape_interval:     15s # By default, scrape targets every 15 seconds.
@@ -210,7 +212,22 @@
 		
 		
 
-5. 监控数据的可视化
+## 5. 监控数据的可视化
+	现有的数据可视化工具很多，比如Prometheus 本身自带的可视化工具，我们可以访问Prometheus server的9090端口，在UI上对数据进行可视化编辑，
+	但通常很难使用图形和仪表板编辑功能，Prometheus利用控制台模板进行可视化和仪表板编辑，但这些控制台模板的学习曲线起初可能很难。
+	现在比较主流的数据可视化工具是Grafana(http://docs.grafana.org/),，其在可视化和仪表板创建和定制方面是最好的选择，而且功能丰富，易于使用，
+	而且非常灵活，目前主要用于大规模指标数据的可视化展现，是网络架构和应用分析中最流行的时序数据展示工具，目前已经支持绝大部分常用的时序数据库。
+	Grafana支持许多不同的数据源。每个数据源都有一个特定的查询编辑器，官方支持以下数据源:Graphite，Elasticsearch，InfluxDB，Prometheus，
+	Cloudwatch，MySQL和OpenTSDB等。每个数据源的查询语言和能力都是不同的。你可以把来自多个数据源的数据组合到一个仪表板，但每一个面板被绑定到一个特定的数据源,
+	它就属于一个特定的组织，这里我们主要是使用Prometheus数据源。
+
+	在定义Query类型变量时，除了使用PromQL查询时间序列以过滤标签的方式以外，Grafana还提供了几个有用的函数：
+	label_values(label) 	    返回Promthues所有监控指标中，标签名为label的所有可选值
+	label_values(metric,label)  返回Promthues所有监控指标metric中，标签名为label的所有可选值
+	metrics(metric)	    	    返回所有指标名称满足metric定义正则表达式的指标名称
+	query_result(query)         返回prometheus查询语句的查询结果
+	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
+			label_values(up, job)
 
 	<div padding="100px"><img src="./dashboard-demo1.png" width="90%" height="60%" padding="1000"></div>
 	<div padding="100px"><img src="./dashboard-demo2.png" width="90%" height="60%" padding="1000"></div>
