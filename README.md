@@ -45,93 +45,94 @@
 
 ## 4. 指标的收集
 	global:
-  # How frequently to scrape targets
-  scrape_interval:     15s # By default, scrape targets every 15 seconds.
+	  #How frequently to scrape targets
+	  scrape_interval:     15s # By default, scrape targets every 15 seconds.
 
-  # How frequently to evaluate rules
-  evaluation_interval: 5s
+	  #How frequently to evaluate rules
+	  evaluation_interval: 5s
 
-  # Attach these labels to any time series or alerts when communicating with
-  # external systems (federation, remote storage, Alertmanager).
-  external_labels:
-    monitor: 'emr'
+	  #Attach these labels to any time series or alerts when communicating with
+	  #external systems (federation, remote storage, Alertmanager).
+	  external_labels:
+	    monitor: 'emr'
 
-# Rules and alerts are read from the specified file(s)
-#rule_files:
-#  - rules.yml
+	# Rules and alerts are read from the specified file(s)
+	#rule_files:
+	#  - rules.yml
 
-# Alerting specifies settings related to the Alertmanager
-#alerting:
-#  alertmanagers:
-#    - scheme: http
-#      static_configs:
-#        - targets: ['transformer-etl-emr.fw1.aws.fwmrm.net:9093']
+	# Alerting specifies settings related to the Alertmanager
+	#alerting:
+	#  alertmanagers:
+	#    - scheme: http
+	#      static_configs:
+	#        - targets: ['transformer-etl-emr.fw1.aws.fwmrm.net:9093']
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
-scrape_configs:
+	# A scrape configuration containing exactly one endpoint to scrape:
+	# Here it's Prometheus itself.
+	scrape_configs:
 
-  # Graphite_Exporter_Job is designed to collect Spark metrics
-  - job_name: 'Graphite_Exporter_Job'
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
+	  # Graphite_Exporter_Job is designed to collect Spark metrics
+	  - job_name: 'Graphite_Exporter_Job'
+	    # metrics_path defaults to '/metrics'
+	    # scheme defaults to 'http'.
 
-    static_configs:
-      - targets: ['transformer-etl-emr.fw1.aws.fwmrm.net:9108']
+	    static_configs:
+	      - targets: ['transformer-etl-emr.fw1.aws.fwmrm.net:9108']
 
-  # Node_Exporter_Job is designed to collect OS system level metrics
-  - job_name: 'Node_Exporter_Job'
-    # Override the global default and scrape targets from this job every 15 seconds.
-    scrape_interval: 15s
+	  # Node_Exporter_Job is designed to collect OS system level metrics
+	  - job_name: 'Node_Exporter_Job'
+	    # Override the global default and scrape targets from this job every 15 seconds.
+	    scrape_interval: 15s
 
-    ec2_sd_configs:
-      - region: us-east-1
-        profile: Role-PRD-Transformer-Aggregator-OptimusExecutor-emr
-        port: 9100
-        filters:
-          - name: tag:Project
-            values:
-              - Transformer
+	    ec2_sd_configs:
+	      - region: us-east-1
+		profile: Role-PRD-Transformer-Aggregator-OptimusExecutor-emr
+		port: 9100
+		filters:
+		  - name: tag:Project
+		    values:
+		      - Transformer
 
-    relabel_configs:
-      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_instance_group_role]
-        target_label: cluster_role
-      #Use instance ID as the instance label instead of private ip:port
-      - source_labels: [__meta_ec2_instance_id]
-        target_label: instance
-      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_job_flow_id]
-        target_label: cluster_id
-      - source_labels: [__meta_ec2_tag_Service]
-        target_label: service
+	    relabel_configs:
+	      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_instance_group_role]
+		target_label: cluster_role
+	      #Use instance ID as the instance label instead of private ip:port
+	      - source_labels: [__meta_ec2_instance_id]
+		target_label: instance
+	      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_job_flow_id]
+		target_label: cluster_id
+	      - source_labels: [__meta_ec2_tag_Service]
+		target_label: service
 
-  # Jmx_Exporter_Job is designed to collect java application such HDFS metrics
-  - job_name: 'Jmx_Exporter_Job'
-    # Override the global default and scrape targets from this job every 15 seconds.
-    scrape_interval: 15s
+	  # Jmx_Exporter_Job is designed to collect java application such HDFS metrics
+	  - job_name: 'Jmx_Exporter_Job'
+	    # Override the global default and scrape targets from this job every 15 seconds.
+	    scrape_interval: 15s
 
-    ec2_sd_configs:
-      - region: us-east-1
-        profile: Role-PRD-Transformer-Aggregator-OptimusExecutor-emr
-        port: 7001
-        filters:
-          - name: tag:Project
-            values:
-              - Transformer
-          - name: tag:Service
-            values:
-              - OptimusExecutor
-    relabel_configs:
-      #This job is for monitoring CORE and TASK nodes, so drop MASTER node.
-      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_instance_group_role]
-        regex: MASTER
-        action: drop
-        #Use instance ID as the instance label instead of private ip:port
-      - source_labels: [__meta_ec2_instance_id]
-        target_label: instance
-      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_job_flow_id]
-        : cluster_id
-      - source_labels: [__meta_ec2_tag_Service]
-        target_label: service
+	    ec2_sd_configs:
+	      - region: us-east-1
+		profile: Role-PRD-Transformer-Aggregator-OptimusExecutor-emr
+		port: 7001
+		filters:
+		  - name: tag:Project
+		    values:
+		      - Transformer
+		  - name: tag:Service
+		    values:
+		      - OptimusExecutor
+	    relabel_configs:
+	      #This job is for monitoring CORE and TASK nodes, so drop MASTER node.
+	      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_instance_group_role]
+		regex: MASTER
+		action: drop
+		#Use instance ID as the instance label instead of private ip:port
+	      - source_labels: [__meta_ec2_instance_id]
+		target_label: instance
+	      - source_labels: [__meta_ec2_tag_aws_elasticmapreduce_job_flow_id]
+		: cluster_id
+	      - source_labels: [__meta_ec2_tag_Service]
+		target_label: service
+		
 		
 
 5. 监控数据的可视化
