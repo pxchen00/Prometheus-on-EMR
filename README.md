@@ -8,7 +8,7 @@
 	首先Prometheus，它支持多维度的指标数据模型，服务端通过HTTP协议定时拉取数据后，通过灵活的查询语言，实现监控的目的。
 	客户端记录相关数据，并提供对外查询接口，服务端则通过服务器发现客户端，并定时抓取形成时序数据存储起来，最后通过可视化工具加以展现，其整体架构如下图：
 
-<div padding="100px"><img src="./architecture.png" width="50%" height="50%" padding="1000"></div>
+<div padding="100px"><img src="./architecture.png" width="80%" height="60%" padding="1000"></div>
 
 ## 2. 为什么需要监控EMR集群
 	为了充分利用集群资源，我们需要对集群状态有非常深刻的了解，
@@ -135,7 +135,9 @@
 
 5. 监控数据的可视化
 
+	<div padding="100px"><img src="./dashboard-demo.png" width="90%" height="60%" padding="1000"></div>
 	
+https://github.com/pxchen00/Prometheus-on-EMR/tree/Prometheus-on-EMR-pre/dashboards
 
 
 
