@@ -3,11 +3,14 @@
 
 
 ## 1. 什么是Prometheus
-	Prometheus(普罗米修斯)这款开源监控工具，名字和功能一样酷，本文是一个干货入门，动手来部署一个实验环境。用Prometheus+Grafana来监控EMR。首先Prometheus，它支持多维度的指标数据模型，服务端通过HTTP协议定时拉取数据后，通过灵活的查询语言，实现监控的目的。客户端记录相关数据，并提供对外查询接口，服务端则通过服务器发现客户端，并定时抓取形成时序数据存储起来，最后通过可视化工具加以展现，其整体架构如下图：
+	Prometheus(普罗米修斯)这款开源监控工具，名字和功能一样酷，本文是一个干货入门，动手来部署一个实验环境。用Prometheus+Grafana来监控EMR。
+	首先Prometheus，它支持多维度的指标数据模型，服务端通过HTTP协议定时拉取数据后，通过灵活的查询语言，实现监控的目的。客户端记录相关数据，
+	并提供对外查询接口，服务端则通过服务器发现客户端，并定时抓取形成时序数据存储起来，最后通过可视化工具加以展现，其整体架构如下图：
 <div padding="100px"><img src="./architecture.png" width="80%" height="60%" padding="1000"></div>
 
 ## 2. 为什么需要监控EMR集群
-	为了充分利用集群资源，我们需要对集群状态有非常深刻的了解，由于team的Spark业务是run在EMR集群上面的，我们需要对整个EMR集群的运行状态有管理，比如磁盘的状态，内存的状态，集群是否稳定等等，都会对我们的pipeline 造成很大的影响；另一方面，我们也是为了能够充分的利用集群资源，做好cost saving.
+	为了充分利用集群资源，我们需要对集群状态有非常深刻的了解，由于team的Spark业务是run在EMR集群上面的，我们需要对整个EMR集群的运行状态有管理，
+	比如磁盘的状态，内存的状态，集群是否稳定等等，都会对我们的pipeline 造成很大的影响；另一方面，我们也是为了能够充分的利用集群资源，做好cost saving.
 
 
 ## 3. Exporter和EMR集群的集成
@@ -220,6 +223,7 @@
 	Grafana支持许多不同的数据源。每个数据源都有一个特定的查询编辑器，官方支持以下数据源:Graphite，Elasticsearch，InfluxDB，Prometheus，
 	Cloudwatch，MySQL和OpenTSDB等。每个数据源的查询语言和能力都是不同的。你可以把来自多个数据源的数据组合到一个仪表板，但每一个面板被绑定到一个特定的数据源,
 	它就属于一个特定的组织，这里我们主要是使用Prometheus数据源。
+	
 
 	在定义Query类型变量时，除了使用PromQL查询时间序列以过滤标签的方式以外，Grafana还提供了几个有用的函数：
 	label_values(label) 	    返回Promthues所有监控指标中，标签名为label的所有可选值
@@ -229,8 +233,8 @@
 	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
 			label_values(up, job)
 
-	<div padding="100px"><img src="./dashboard-demo1.png" width="90%" height="60%" padding="1000"></div>
-	<div padding="100px"><img src="./dashboard-demo2.png" width="90%" height="60%" padding="1000"></div>
+<div padding="100px"><img src="./dashboard-demo1.png" width="90%" height="60%" padding="1000"></div>
+<div padding="100px"><img src="./dashboard-demo2.png" width="90%" height="60%" padding="1000"></div>
 	
 https://github.com/pxchen00/Prometheus-on-EMR/tree/Prometheus-on-EMR-pre/dashboards
 
