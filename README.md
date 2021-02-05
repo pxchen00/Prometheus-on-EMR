@@ -3,8 +3,8 @@
 
 
 ## 1. 什么是Prometheus
-	Prometheus(普罗米修斯)这款开源监控工具，名字和功能一样酷，本文是一个干货入门，动手来部署一个实验环境。用Prometheus+Grafana来监控EMR。
-	首先Prometheus，它支持多维度的指标数据模型，服务端通过HTTP协议定时拉取数据后，通过灵活的查询语言，实现监控的目的。客户端记录相关数据，
+	Prometheus(普罗米修斯)是一款非常好用的开源监控工具，我们大数据team在进行ETL处理时使用Prometheus+Grafana来对整个系统进行监控。
+	Prometheus支持多维度的指标数据模型，服务端通过HTTP协议定时拉取数据，然后给用户提供灵活的查询语言PromQL，实现监控的目的。客户端记录相关数据，
 	并提供对外查询接口，服务端则通过服务器发现客户端，并定时抓取形成时序数据存储起来，最后通过可视化工具加以展现，其整体架构如下图：
 <div padding="100px"><img src="./architecture.png" width="80%" height="60%" padding="1000"></div>
 
