@@ -9,12 +9,23 @@
 <div padding="100px"><img src="./architecture.png" width="80%" height="60%" padding="1000"></div>
 
 ## 2. 什么是EMR集群
-	Amazon EMR 是一个托管集群平台，可简化在 AWS 上运行大数据框架（如 Apache Hadoop 和 Apache Spark）以处理和分析海量数据的操作，Freewheel的Transformer team的Spark业务正是run 在EMR集群上的，具体的可以看我同事写的一篇关于EMR 的介绍	（https://github.com/pkexcellent/articles/blob/main/EMR%E5%AE%9E%E8%B7%B5/AWS%20EMR%E5%9C%A8Freewheel%E7%9A%84%E5%BA%94%E7%94%A8%E4%B8%8E%E5%AE%9E%E8%B7%B5.md）由于我们核心服务都migration 到EMR 上了，所以对EMR集群有一个实时的监控，是非常重要的，比如磁盘的状态，内存的状态，集群是否稳定等等，都会对我们的pipeline 造成很大的影响；另一方面，我们也是	为了能够充分的利用集群资源，做好cost saving 也需要知道现在资源的利用率是否需要调整。
+	Amazon EMR 是一个托管集群平台，可简化在 AWS 上运行大数据框架（如 Apache Hadoop 和 Apache Spark）以处理和分析海量数据的操作
+	，Freewheel的Transformer team的Spark业务正是run 在EMR集群上的，由于我们核心服务都迁移到EMR上了，所以对EMR集群有一个实时的监控，
+	是非常重要的，比如磁盘的状态，内存的状态，集群是否稳定等等，都会对我们的pipeline 造成很大的影响；另一方面，我们也是为了能够充分的利用集群资源，
+	做好cost saving 也需要知道现在资源的利用率是否需要调整。
+	
+具体的可以看我同事写的一篇关于EMR的介绍https://github.com/pkexcellent/articles/blob/main/EMR%E5%AE%9E%E8%B7%B5/AWS%20EMR%E5%9C%A8Freewheel%E7%9A%84%E5%BA%94%E7%94%A8%E4%B8%8E%E5%AE%9E%E8%B7%B5.md
 
 
 ## 3. 什么是Exporter
+	一般Prometheus提供监控数据的程序都可以成为一个exporter的，一个exporter的实例称为Target, 现有的Prometheus生态中Exporter可以在官网查看，非常丰富
+https://prometheus.io/docs/instrumenting/exporters/
+
+
 ### 3.1 Graphite Exporter
-	纯文本协议中导出的指标的导出器。 它通过TCP和UDP接收数据，并进行转换并将其公开以供Prometheus使用。该导出器对于从现有Graphite设置导出度量标准以及核心Prometheus导出器（例如Node Exporter）未涵盖的度量标准非常有用。https://github.com/prometheus/graphite_exporter, 下面是安装 Graphite Exporter 的流程:
+	纯文本协议中导出的指标的导出器。 它通过TCP和UDP接收数据，并进行转换并将其公开以供Prometheus使用。该导出器对于从现有Graphite设置导出度量标准
+	以及核心Prometheus导出器（例如Node Exporter）未涵盖的度量标准非常有用。https://github.com/prometheus/graphite_exporter, 下面是安装 
+	Graphite Exporter 的流程:
 **step 1: Download node_exporter release from original repo**
 
 	curl -L -O  https://github.com/prometheus/graphite_exporter/releases/download/v0.9.0/graphite_exporter-0.9.0.linux-amd64.tar.gz
@@ -107,12 +118,12 @@
 	JMX到Prometheus导出器：一个收集器，该收集器可以可配置地抓取和公开JMX目标的mBean。该导出程序旨在作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
 	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标，但这有许多缺点，例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。 
 	因此，强烈建议将导出程序作为Java代理运行。
-	https://github.com/prometheus/jmx_exporter
+https://github.com/prometheus/jmx_exporter
 
 ### 3.3 Node Exporter
 	Prometheus导出程序，用于* NIX内核公开的硬件和操作系统指标，使用可插入的指标收集器用Go编写。
 	建议Windows用户使用Windows导出程序。 要公开NVIDIA GPU指标，可以使用prometheus-dcgm。
-	https://github.com/prometheus/node_exporter
+https://github.com/prometheus/node_exporter
 
 
 ## 4. 如何收集EMR集群的指标
@@ -322,7 +333,7 @@
 		{method= "post"} 0.05 // 6 / 120
 		也就是每一种 method 里 code 为 500 的请求数占总数的百分比。由于 method 为 put 和 del 的没有匹配元素所以没有出现在结果里。
 
-**b. Many-to-one / one-to-many 向量匹配**
+**b. many-to-one / one-to-many 向量匹配**
 
 	这种匹配模式下，某一边会有多个元素跟另一边的元素匹配。这时就需要使用 group_left 或 group_right 组修饰符来指明哪边匹配元素较多，左边多则用 group_left，右边多则用 group_right。其	语法如下：
 
