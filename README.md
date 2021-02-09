@@ -24,8 +24,7 @@ https://github.com/pkexcellent/articles/blob/main/EMR%E5%AE%9E%E8%B7%B5/AWS%20EM
 https://prometheus.io/docs/instrumenting/exporters/
 
 ### 3.1 Node Exporter
-	Prometheus导出程序，用于* NIX内核公开的硬件和操作系统指标，使用可插入的指标收集器用Go编写。建议Windows用户使用Windows导出程序。 
-	要公开NVIDIA GPU指标，可以使用prometheus-dcgm。
+	Prometheus Exporter生态的一员，用Go编写，使用可插入的指标收集器，采集Linux内核公开的硬件和操作系统指标。如果要公开NVIDIA GPU指标，可以使用prometheus-dcgm。
 https://github.com/prometheus/node_exporter
 
 	我们需要在EMR的每台机器上都安装 node exporter来采集相关的指标信息，所以我们会在EMR的Bootstrap脚本（可用于在EMR 集群中运行引导操作，在EMR 在集群实例上安装和配置开源大数据应用程序之前，您可以使用引导操作来为所有集群节点安装软件和配置EC2实例）里面来进行设置，具体的操作如下：
@@ -345,10 +344,10 @@ https://github.com/prometheus/node_exporter
 	PromQL（Prometheus Query Language）是 Prometheus 自己开发的表达式语言，语言表现力很丰富，内置函数也很多。使用它可以对时序数据进行筛选和聚合。
 	PromQL 表达式计算出来的值有以下几种类型：
 
-	瞬时向量 (Instant vector): 一组时序，每个时序只有一个采样值
-	区间向量 (Range vector): 一组时序，每个时序包含一段时间内的多个采样值
-	标量数据 (Scalar): 一个浮点数
-	字符串 (String): 一个字符串，暂时未用
+		瞬时向量 (Instant vector): 一组时序，每个时序只有一个采样值
+		区间向量 (Range vector): 一组时序，每个时序包含一段时间内的多个采样值
+		标量数据 (Scalar): 一个浮点数
+		字符串 (String): 一个字符串，暂时未用
 	
 #### 5.2 时序选择器
 
@@ -390,9 +389,9 @@ https://github.com/prometheus/node_exporter
 
 	逻辑操作符仅用于向量与向量之间,具体有：and(交集)，or(合集)，unless(补集)
 	规则如下：
-	vector1 and vector2 的结果由在 vector2 里有匹配（标签键值对组合相同）元素的 vector1 里的元素组成。
-	vector1 or vector2 的结果由所有 vector1 里的元素加上在 vector1 里没有匹配（标签键值对组合相同）元素的 vector2 里的元素组成。
-	vector1 unless vector2 的结果由在 vector2 里没有匹配（标签键值对组合相同）元素的 vector1 里的元素组成。
+		vector1 and vector2 的结果由在 vector2 里有匹配（标签键值对组合相同）元素的 vector1 里的元素组成。
+		vector1 or vector2 的结果由所有 vector1 里的元素加上在 vector1 里没有匹配（标签键值对组合相同）元素的 vector2 里的元素组成。
+		vector1 unless vector2 的结果由在 vector2 里没有匹配（标签键值对组合相同）元素的 vector1 里的元素组成。
 	
 ### 5.4 聚合操作符及辅助函数
 	PromQL 提供了比较丰富的聚合操作符：sum（求和），min（最小值），max（最大值），avg（平均值），stddev（标准差），stdvar（方差），count（元素个数），count_values（等于某值的元素个数），bottomk（最小的 k 个元素），topk（最大的 k 个元素），quantile（分位数）等等。聚合操作符语法如下：
@@ -421,10 +420,10 @@ https://prometheus.io/docs/prometheus/latest/querying/basics/
 	
 	在定义Query类型变量时，除了使用PromQL查询时间序列以过滤标签的方式以外，Grafana还提供了几个有用的函数：
 	
-	label_values(label) 	    返回Promthues所有监控指标中，标签名为label的所有可选值
-	label_values(metric,label)  返回Promthues所有监控指标metric中，标签名为label的所有可选值
-	metrics(metric)	    	    返回所有指标名称满足metric定义正则表达式的指标名称
-	query_result(query)         返回prometheus查询语句的查询结果
+			label_values(label) 	    返回Promthues所有监控指标中，标签名为label的所有可选值
+			label_values(metric,label)  返回Promthues所有监控指标metric中，标签名为label的所有可选值
+			metrics(metric)	    	    返回所有指标名称满足metric定义正则表达式的指标名称
+			query_result(query)         返回prometheus查询语句的查询结果
 	
 	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
 			label_values(up, job)	
