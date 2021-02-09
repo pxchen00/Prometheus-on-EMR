@@ -199,6 +199,8 @@ https://github.com/prometheus/node_exporter
 
 	    Prometheus pull时，可以通过static_configs参数配置静态配置目标，也可以使用受支持的服务发现机制之一动态发现目标。下面是一个完整的Prometheus配置：
 	global:
+	
+	 
 	  #How frequently to scrape targets
 	  scrape_interval:     15s # By default, scrape targets every 15 seconds.
 
@@ -299,7 +301,7 @@ https://github.com/prometheus/node_exporter
 	标量数据 (Scalar): 一个浮点数
 	字符串 (String): 一个字符串，暂时未用
 	
-#### 5.1.1 时序选择器
+#### 5.2 时序选择器
 
 **a.瞬时向量选择器**
 
@@ -323,7 +325,7 @@ https://github.com/prometheus/node_exporter
 		node_memory_MemAvailable_bytes offset 5m       //node_memory_MemAvailable_bytes 的所有时序在 5 分钟前的采样值。
 		node_memory_MemAvailable_bytes[5m] offset 1w   //下面的表达式选择 node_memory_MemAvailable_bytes 度量指标在 1 周前的这个时间点过去 5 分钟的采样值。
 
-#### 5.1.2 操作符
+#### 5.3 操作符
 
 **a.算术类二元操作符**
 
@@ -343,7 +345,7 @@ https://github.com/prometheus/node_exporter
 	vector1 or vector2 的结果由所有 vector1 里的元素加上在 vector1 里没有匹配（标签键值对组合相同）元素的 vector2 里的元素组成。
 	vector1 unless vector2 的结果由在 vector2 里没有匹配（标签键值对组合相同）元素的 vector1 里的元素组成。
 	
-### 5.1.5 聚合操作符及辅助函数
+### 5.4 聚合操作符及辅助函数
 	PromQL 提供了比较丰富的聚合操作符：sum（求和），min（最小值），max（最大值），avg（平均值），stddev（标准差），stdvar（方差），count（元素个数），count_values（等于某值的元素个数），bottomk（最小的 k 个元素），topk（最大的 k 个元素），quantile（分位数）等等。聚合操作符语法如下：
 		<aggr-op>([parameter,] <vector expression>) [without|by (<label list>)] 
 	eg：
@@ -355,16 +357,20 @@ https://github.com/prometheus/node_exporter
 https://prometheus.io/docs/prometheus/latest/querying/basics/
 
 
-### 5.2 Grafana可视化
+### 6 Grafana配置及可视化效果
 
 	    现有的数据可视化工具很多，比如Prometheus 本身自带的可视化工具，我们可以访问Prometheus server的9090端口，在UI上对数据进行可视化编辑，
 	但通常很难使用图形和仪表板编辑功能，Prometheus利用控制台模板进行可视化和仪表板编辑，但这些控制台模板的学习曲线起初可能很难。
+	
 	    现在比较主流的数据可视化工具是Grafana(http://docs.grafana.org/)，其在可视化和仪表板创建和定制方面是最好的选择，而且功能丰富，易于使用，
 	而且非常灵活，目前主要用于大规模指标数据的可视化展现，是网络架构和应用分析中最流行的时序数据展示工具，目前已经支持绝大部分常用的时序数据库。
-	Grafana支持许多不同的数据源。每个数据源都有一个特定的查询编辑器，官方支持以下数据源:Graphite，Elasticsearch，InfluxDB，Prometheus，
+	Grafana支持许多不同的数据源。
+	
+	    每个数据源都有一个特定的查询编辑器，官方支持以下数据源:Graphite，Elasticsearch，InfluxDB，Prometheus，
 	Cloudwatch，MySQL和OpenTSDB等。每个数据源的查询语言和能力都是不同的。你可以把来自多个数据源的数据组合到一个仪表板，但每一个面板被绑定到一个特定的数据源,
 	它就属于一个特定的组织，这里我们主要是使用Prometheus数据源。
-	    在定义Query类型变量时，除了使用PromQL查询时间序列以过滤标签的方式以外，Grafana还提供了几个有用的函数：
+	
+	在定义Query类型变量时，除了使用PromQL查询时间序列以过滤标签的方式以外，Grafana还提供了几个有用的函数：
 	
 	label_values(label) 	    返回Promthues所有监控指标中，标签名为label的所有可选值
 	label_values(metric,label)  返回Promthues所有监控指标metric中，标签名为label的所有可选值
@@ -372,11 +378,10 @@ https://prometheus.io/docs/prometheus/latest/querying/basics/
 	query_result(query)         返回prometheus查询语句的查询结果
 	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
 			label_values(up, job)			
-<div padding="100px"><img src="./granfan-variables.png" width="90%" height="60%" padding="1000"></div>
+<div padding="100px"><img src="./granfan- variables.png" width="90%" height="60%" padding="1000"></div>
 <div padding="100px"><img src="./dashboard-demo3.png" width="90%" height="60%" padding="1000"></div>
 
 
-## 6 demo
 	下面就是整个monitor最终的效果图了，具体的dashboard可以参考下面的link
 
 <div padding="100px"><img src="./dashboard-demo1.png" width="90%" height="60%" padding="1000"></div>
