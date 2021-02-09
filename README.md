@@ -21,109 +21,173 @@
 	一般Prometheus提供监控数据的程序都可以成为一个exporter的，一个exporter的实例称为Target, 现有的Prometheus生态中Exporter可以在官网查看，非常丰富
 https://prometheus.io/docs/instrumenting/exporters/
 
+### 3.1 Node Exporter
+	Prometheus导出程序，用于* NIX内核公开的硬件和操作系统指标，使用可插入的指标收集器用Go编写。建议Windows用户使用Windows导出程序。 
+	要公开NVIDIA GPU指标，可以使用prometheus-dcgm。
+https://github.com/prometheus/node_exporter
 
-### 3.1 Graphite Exporter
-	纯文本协议中导出的指标的导出器。 它通过TCP和UDP接收数据，并进行转换并将其公开以供Prometheus使用。该导出器对于从现有Graphite设置导出度量标准
-	以及核心Prometheus导出器（例如Node Exporter）未涵盖的度量标准非常有用。https://github.com/prometheus/graphite_exporter, 下面是安装 
-	Graphite Exporter 的流程:
-**step 1: Download node_exporter release from original repo**
+	我们需要在EMR的每台机器上都安装 node exporter来采集相关的指标信息，所以我们会在EMR的Bootstrap脚本（可用于在EMR 集群中运行引导操作，在EMR 在集群实例上安装和配置开源大数据应用程序之前，您可以使用引导操作来为所有集群节点安装软件和配置EC2实例）里面来进行设置，具体的操作如下：
+**step 1: Download node_exporter release from original repo** 
 
-	curl -L -O  https://github.com/prometheus/graphite_exporter/releases/download/v0.9.0/graphite_exporter-0.9.0.linux-amd64.tar.gz
-	tar -xzvf graphite_exporter-0.9.0.linux-amd64.tar.gz
-	sudo cp graphite_exporter-0.9.0.linux-amd64/graphite_exporter /usr/local/bin/
-	rm -rf graphite_exporter-0.9.0.linux-amd64.tar.gz
-	rm -rf graphite_exporter-0.9.0.linux-amd64
-**step 2: Add graphite_exporter's mapping file**
+	sudo useradd --no-create-home --shell /bin/false node_exporter
+	cd /tmp
+	sudo wget https://github.com/prometheus/node_exporter/releases/download/v1.0.0/node_exporter-1.0.0.linux-amd64.tar.gz
+	tar -xvzf node_exporter-1.0.0.linux-amd64.tar.gz
+	cd node_exporter-1.0.0.linux-amd64
+	sudo cp node_exporter /usr/local/bin/
+	cd /tmp
+	sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
-	sudo mkdir -p /etc/graphite_exporter
-	sudo tee /etc/graphite_exporter/graphite_exporter_mapping << END
-	mappings:
-	- match: '*.*.executor.filesystem.*.*'
-	  name: filesystem_usage
-	  labels:
-	    application: \$1
-	    executor_id: \$2
-	    fs_type: \$3
-	    qty: \$4
+**step 2: Add node_exporter as systemd service**
 
-	- match: '*.*.jvm.*.*'
-	  name: jvm_memory_usage
-	  labels:
-	    application: \$1
-	    executor_id: \$2
-	    mem_type: \$3
-	    qty: \$4
-
-	- match: '*.*.executor.jvmGCTime.count'
-	  name: jvm_gcTime_count
-	  labels:
-	    application: \$1
-	    executor_id: \$2
-
-	- match: '*.*.jvm.pools.*.*'
-	  name: jvm_memory_pools
-	  labels:
-	    application: \$1
-	    executor_id: \$2
-	    mem_type: \$3
-	    qty: \$4
-
-	- match: '*.*.executor.threadpool.*'
-	  name: executor_tasks
-	  labels:
-	    application: \$1
-	    executor_id: \$2
-	    qty: \$3
-
-	- match: '*.*.BlockManager.*.*'
-	  name: block_manager
-	  labels:
-	    application: \$1
-	    executor_id: \$2
-	    type: \$3
-	    qty: \$4
-
-	- match: DAGScheduler.*.*
-	  name: DAG_scheduler
-	  labels:
-	    type: \$1
-	    qty: \$2
-	END
-
-**step 3: Add graphite_exporter as systemd service**
-
-	sudo tee /etc/systemd/system/graphite_exporter.service << END
+	sudo tee /etc/systemd/system/node_exporter.service << END
 	[Unit]
-	Description=Graphite Exporter
-	Wants=network-online.target
-	After=network-online.target
+	Description=Node Exporter
 
 	[Service]
-	User=ec2-user
-	Group=ec2-user
-	ExecStart=/usr/local/bin/graphite_exporter --graphite.mapping-config=/etc/graphite_exporter/graphite_exporter_mapping.yaml
-
-	Restart=always
+	User=node_exporter
+	Group=node_exporter
+	ExecStart=/usr/local/bin/node_exporter $OPTIONS
 
 	[Install]
 	WantedBy=multi-user.target
 	END
-	sudo chown -R ec2-user:ec2-user /etc/graphite_exporter/
+	sudo chown node_exporter:node_exporter /etc/systemd/system/node_exporter.service
 	sudo systemctl daemon-reload
-	sudo systemctl start graphite_exporter
-	sudo systemctl enable graphite_exporter
-	
+	sudo systemctl start node_exporter
+	sudo systemctl enable node_exporter
+
 
 ### 3.2 JMX Exporter
-	JMX到Prometheus导出器：一个收集器，该收集器可以可配置地抓取和公开JMX目标的mBean。该导出程序旨在作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
-	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标，但这有许多缺点，例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。 
-	因此，强烈建议将导出程序作为Java代理运行。
-https://github.com/prometheus/jmx_exporter
+	JMX到Prometheus导出器：一个采集器，该采集器可以可配置地抓取和公开JMX目标的mBean。该exporter旨在作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
+	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标。我们同样需要在EMR 集群的每台机器上进行配置，配置的方式和node exporter 一样，基于Bootstrap脚本进行，具体步骤如下：
+	
+**step 1: Download jmx_exporter release from original repo**
 
-### 3.3 Node Exporter
-	Prometheus导出程序，用于* NIX内核公开的硬件和操作系统指标，使用可插入的指标收集器用Go编写。
-	建议Windows用户使用Windows导出程序。 要公开NVIDIA GPU指标，可以使用prometheus-dcgm。
-https://github.com/prometheus/node_exporter
+	#3. set up jmx_exporter for HDFS application metrics
+	sudo mkdir -p /etc/prometheus/hadoop/conf
+	sudo wget -P /etc/prometheus https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.13.0/jmx_prometheus_javaagent-0.13.0.jar
+
+**step 2: write jmx_exporter metrics name_node and data_node mapping conf**
+
+	sudo tee /etc/prometheus/hadoop/conf/hdfs_jmx_config_namenode.yaml << END
+	lowercaseOutputName: true
+	lowercaseOutputLabelNames: true
+	rules:
+	  # RPC
+	  - pattern: 'Hadoop<service=(.*), name=RpcActivityForPort([^\W>]+)><>([\w.]+)'
+	    attrNameSnakeCase: true
+	    name: rpc_activity_$3
+	    labels:
+	      role: "$1"
+	      port: "$2"
+	  # Log
+	  - pattern: 'Hadoop<service=(.*), name=JvmMetrics><>Log(Warn|Fatal|Info|Error)'
+	    name: log_$2
+	    labels:
+	      role: $1
+	  # MetricsSystem
+	  - pattern: 'Hadoop<service=(.*), name=MetricsSystem, sub=(.*)><>(.*): (\d+)'
+	    attrNameSnakeCase: true
+	    name: hdfs_$1_$3
+	    value: $4
+	    labels:
+	      role: $1
+	      kind: 'MetricsSystem'
+	      sub: $2
+	    type: GAUGE
+	  # All NameNode infos
+	  - pattern: 'Hadoop<service=(.*), name=(.*)><>(.*): (\d+)'
+	    attrNameSnakeCase: true
+	    name: hdfs_$1_$3
+	    value: $4
+	    labels:
+	      role: $1
+	      kind: $2
+	    type: GAUGE
+	  - pattern: '.*'
+	END
+	
+	
+	sudo tee /etc/prometheus/hadoop/conf/hdfs_jmx_config_datanode.yaml << END
+	lowercaseOutputName: true
+	lowercaseOutputLabelNames: true
+	rules:
+	  # RPC
+	  - pattern: 'Hadoop<service=(.*), name=RpcActivityForPort([^\W>]+)><>([\w.]+)'
+	    attrNameSnakeCase: true
+	    name: rpc_activity_$3
+	    labels:
+	      role: "$1"
+	      port: "$2"
+	  # Log
+	  - pattern: 'Hadoop<service=(.*), name=JvmMetrics><>Log(Warn|Fatal|Info|Error)'
+	    name: log_$2
+	    labels:
+	      role: $1
+	  # MetricsSystem
+	  - pattern: 'Hadoop<service=(.*), name=MetricsSystem, sub=(.*)><>(.*): (\d+)'
+	    attrNameSnakeCase: true
+	    name: hdfs_$1_$3
+	    value: $4
+	    labels:
+	      role: $1
+	      kind: 'MetricsSystem'
+	      sub: $2
+	    type: GAUGE
+	  # FSDatasetState (also extracts the FSDataset ID)
+	  - pattern: 'Hadoop<service=(.*), name=FSDatasetState-(.*)><>(.*): (\d+)'
+	    attrNameSnakeCase: true
+	    name: hdfs_$1_$3
+	    value: $4
+	    labels:
+	      role: $1
+	      fsdatasetid: $2
+	      kind: 'FSDatasetState'
+	    type: GAUGE
+	  # DataNodeActivity (also extracts hostname and port)
+	  - pattern: 'Hadoop<service=(.*), name=DataNodeActivity-(.*)-(\d+)><>(.*): (\d+)'
+	    attrNameSnakeCase: true
+	    name: hdfs_$1_$4
+	    value: $5
+	    labels:
+	      role: $1
+	      host: $2
+	      port: $3
+	      kind: 'DataNodeActivity'
+	    type: GAUGE
+	  # All other services
+	  - pattern: 'Hadoop<service=(.*), name=(.*)><>(.*): (\d+)'
+	    attrNameSnakeCase: true
+	    name: hdfs_$1_$3
+	    value: $4
+	    labels:
+	      role: $1
+	      kind: $2
+	    type: GAUGE
+	  - pattern: '.*'
+	END
+	
+**step 3: Add jmx_exporter's as javaagent in EMR Clsuter**
+
+	该exporter程序可以作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标，但这有许多缺点，
+	例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。因此我们将jmx exporter 运行程序和node node 以及data node 进行关联，将exporter程序作为Java代理运行。
+	具体的操作如下，我们需要在EMR 的configurations_json 里面进行如下配置：
+
+	{
+		"Classification":"hadoop-env",
+		"Configurations": [
+		    {
+			"Classification": "export",
+			"Properties": {
+			    "HDFS_NAMENODE_OPTS": "\"-javaagent:/etc/prometheus/jmx_prometheus_javaagent-0.13.0.jar=7001:/etc/prometheus/hadoop/conf/hdfs_jmx_config_namenode.yaml -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=50103\"",
+			    "HDFS_DATANODE_OPTS": "\"-javaagent:/etc/prometheus/jmx_prometheus_javaagent-0.13.0.jar=7001:/etc/prometheus/hadoop/conf/hdfs_jmx_config_datanode.yaml -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=50103\""
+			}
+		    }
+		],
+		"Properties":{}
+	}
+
 
 
 ## 4. 如何收集EMR集群的指标
@@ -131,7 +195,7 @@ https://github.com/prometheus/node_exporter
 	来指定Prometheus在运行时需要拉取指标的目标，目标实例需要实现一个可以被Prometheus进行轮询的端点接口，而Exporter正是用来提供这样接口的，
 	比如用来拉取操作系统指标的Node Exporter，它会从操作系统上收集硬件指标，供Prometheus来拉取。
 
-<div padding="100px"><img src="./monitor-deploy.png" width="90%" height="60%" padding="1000"></div>
+<div padding="100px"><img src="./monitor-deploy.png" width="60%" height="40%" padding="1000"></div>
 
 	    Prometheus pull时，可以通过static_configs参数配置静态配置目标，也可以使用受支持的服务发现机制之一动态发现目标。下面是一个完整的Prometheus配置：
 	global:
@@ -155,7 +219,7 @@ https://github.com/prometheus/node_exporter
 	#  alertmanagers:
 	#    - scheme: http
 	#      static_configs:
-	#        - targets: ['transformer-etl-emr.fw1.aws.fwmrm.net:9093']
+	#        - targets: ['xxx.xxx.xxx.xxx:9093']
 
 	# A scrape configuration containing exactly one endpoint to scrape:
 	# Here it's Prometheus itself.
@@ -167,7 +231,7 @@ https://github.com/prometheus/node_exporter
 	    # scheme defaults to 'http'.
 
 	    static_configs:
-	      - targets: ['transformer-etl-emr.fw1.aws.fwmrm.net:9108']
+	      - targets: ['xxx.xxx.xxx.xxx:9108']
 
 	  # Node_Exporter_Job is designed to collect OS system level metrics
 	  - job_name: 'Node_Exporter_Job'
@@ -176,7 +240,7 @@ https://github.com/prometheus/node_exporter
 
 	    ec2_sd_configs:
 	      - region: us-east-1
-		profile: Role-PRD-Transformer-Aggregator-OptimusExecutor-emr
+		profile: your-emr-role-profile-name
 		port: 9100
 		filters:
 		  - name: tag:Project
@@ -201,7 +265,7 @@ https://github.com/prometheus/node_exporter
 
 	    ec2_sd_configs:
 	      - region: us-east-1
-		profile: Role-PRD-Transformer-Aggregator-OptimusExecutor-emr
+		profile: your-emr-role-profile-name
 		port: 7001
 		filters:
 		  - name: tag:Project
