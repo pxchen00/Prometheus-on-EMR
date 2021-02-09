@@ -339,7 +339,7 @@ https://github.com/prometheus/node_exporter
 
 	到这里整个Prometheus 监控架构基本都搭建完成了，接下来，我们需要看一下如何对采集到的metrics 进行查询。
 
-## 5. 数据的查询
+## 5. 指标数据的查询介绍
 ### 5.1 PromQL
 	PromQL（Prometheus Query Language）是 Prometheus 自己开发的表达式语言，语言表现力很丰富，内置函数也很多。使用它可以对时序数据进行筛选和聚合。
 	PromQL 表达式计算出来的值有以下几种类型：
