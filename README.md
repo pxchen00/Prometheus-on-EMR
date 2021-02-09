@@ -226,8 +226,6 @@ https://github.com/prometheus/node_exporter
 ## 5. 数据的查询及可视化
 ### 5.1 PromQL
 	PromQL（Prometheus Query Language）是 Prometheus 自己开发的表达式语言，语言表现力很丰富，内置函数也很多。使用它可以对时序数据进行筛选和聚合。
-
-#### 5.1.1 数据类型
 	PromQL 表达式计算出来的值有以下几种类型：
 
 	瞬时向量 (Instant vector): 一组时序，每个时序只有一个采样值
@@ -235,39 +233,31 @@ https://github.com/prometheus/node_exporter
 	标量数据 (Scalar): 一个浮点数
 	字符串 (String): 一个字符串，暂时未用
 	
-#### 5.1.2 时序选择器
+#### 5.1.1 时序选择器
 
 **a.瞬时向量选择器**
 
-	瞬时向量选择器用来选择一组时序在某个采样点的采样值。
-	最简单的情况就是指定一个度量指标，选择出所有属于该度量指标的时序的当前采样值。比如下面的表达式：
-	http_requests_total
-	可以通过在后面添加用大括号包围起来的一组标签键值对来对时序进行过滤。比如下面的表达式筛选出了 job 为 prometheus，并且 group 为 canary 的时序：
-
-	http_requests_total{job="prometheus", group="canary"}
-	匹配标签值时可以是等于，也可以使用正则表达式。总共有下面几种匹配操作符：
-
-	=：完全相等
-	!=： 不相等
-	=~： 正则表达式匹配
-	!~： 正则表达式不匹配
-	下面的表达式筛选出了 environment 为 staging 或 testing 或 development，并且 method 不是 GET 的时序：
-
-	http_requests_total{environment=~"staging|testing|development",method!="GET"}
-	度量指标名可以使用内部标签 __name__ 来匹配，表达式 http_requests_total 也可以写成 {__name__="http_requests_total"}。表达式 {__name__=~"job:.*"} 匹配所有度量指标名称以 job: 打头的时序。
+	瞬时向量选择器用来选择一组时序在某个采样点的采样值,比如下面的表达式：
+	node_memory_MemAvailable_bytes{job=~'$job',service='optimusExecutor',cluster_id=~'$cluster'}
+	
+	度量指标名可以使用内部标签 __name__ 来匹配:
+	表达式 node_memory_MemAvailable_bytes 也可以写成 {__name__="node_memory_MemAvailable_bytes"}。
+	表达式 {__name__=~"job:.*"} 表示匹配所有度量指标名称以 job: 打头的时序。
+	
+	注意： = (完全相等)，!= (不相等)，=~ (正则表达式匹配)，!~ (正则表达式不匹配)
 	
 **b.区间向量选择器**
 
-	区间向量选择器类似于瞬时向量选择器，不同的是它选择的是过去一段时间的采样值。可以通过在瞬时向量选择器后面添加包含在 [] 里的时长来得到区间向量选择器。比如下面的表达式选出了所有度量指标为 		http_requests_total 且 job 为 prometheus 的时序在过去 5 分钟的采样值。eg:
-		http_requests_total{job="prometheus"}[5m]
+	区间向量选择器是选择过去一段时间的采样值。可以通过在瞬时向量选择器后面添加包含在 [] 里的时长来得到区间向量选择器。eg: 
+		node_memory_MemAvailable_bytes{job="Node_Exporter_Job",service='optimusExecutor'}[5m]   //job为Node_Exporter_Job, service为optimusExecutor的时序在过去 5分钟的采样值
 		
 **c.偏移修饰器**
 
 	前面介绍的选择器默认都是以当前时间为基准时间，偏移修饰器用来调整基准时间，使其往前偏移一段时间。偏移修饰器紧跟在选择器后面，使用 offset 来指定要偏移的量。
-		http_requests_total offset 5m   //http_requests_total 的所有时序在 5 分钟前的采样值。
-		http_requests_total[5m] offset 1w   //下面的表达式选择 http_requests_total 度量指标在 1 周前的这个时间点过去 5 分钟的采样值。
+		node_memory_MemAvailable_bytes offset 5m       //node_memory_MemAvailable_bytes 的所有时序在 5 分钟前的采样值。
+		node_memory_MemAvailable_bytes[5m] offset 1w   //下面的表达式选择 node_memory_MemAvailable_bytes 度量指标在 1 周前的这个时间点过去 5 分钟的采样值。
 
-#### 5.1.3 操作符
+#### 5.1.2 操作符
 
 **a.算术类二元操作符**
 
@@ -278,25 +268,8 @@ https://github.com/prometheus/node_exporter
 	标量与标量之间，结果很明显，跟通常的算术运算一致。
 	向量与标量之间，相当于把标量跟向量里的每一个标量进行运算，这些计算结果组成了一个新的向量。
 	向量与向量之间，会稍微麻烦一些。运算的时候首先会为左边向量里的每一个元素在右边向量里去寻找一个匹配元素（匹配规则后面会讲），然后对这两个匹配元素执行计算，这样每对匹配元素的计算结果组成了一个新的向量。如果没有找到匹配元素，则该元素丢弃。
-**b.比较类二元操作符**
 
-	比较类二元操作符有以下几种：
-
-		== (equal)
-		!= (not-equal)
-		> (greater-than)
-		< (less-than)
-		>= (greater-or-equal)
-		<= (less-or-equal)
-	比较类二元操作符同样可以使用在标量与标量、向量与标量，以及向量与向量之间。默认执行的是过滤，也就是保留值。
-
-	也可以通过在运算符后面跟 bool 修饰符来使得返回值 0 和 1，而不是过滤。
-
-	标量与标量之间，必须跟 bool 修饰符，因此结果只可能是 0（false） 或 1（true）。
-	向量与标量之间，相当于把向量里的每一个标量跟标量进行比较，结果为真则保留，否则丢弃。如果后面跟了 bool 修饰符，则结果分别为 1 和 0。
-	向量与向量之间，运算过程类似于算术类操作符，只不过如果比较结果为真则保留左边的值（包括度量指标和标签这些属性），否则丢弃，没找到匹配也是丢弃。如果后面跟了 bool 修饰符，则保留和丢弃时结果	相应为 1 和 0。
-	
-**c.逻辑类二元操作符**
+**b.逻辑类二元操作符**
 
 	逻辑操作符仅用于向量与向量之间,具体有：and(交集)，or(合集)，unless(补集)
 	规则如下：
@@ -304,64 +277,12 @@ https://github.com/prometheus/node_exporter
 	vector1 or vector2 的结果由所有 vector1 里的元素加上在 vector1 里没有匹配（标签键值对组合相同）元素的 vector2 里的元素组成。
 	vector1 unless vector2 的结果由在 vector2 里没有匹配（标签键值对组合相同）元素的 vector1 里的元素组成。
 	
-#### 5.1.4 向量匹配
-	前面算术类和比较类操作符都需要在向量之间进行匹配。共有两种匹配类型，one-to-one 和 many-to-one / one-to-many。
-
-**a. One-to-one 向量匹配**
-
-	这种匹配模式下，两边向量里的元素如果其标签键值对组合相同则为匹配，并且只会有一个匹配元素。可以使用 ignoring 关键词来忽略不参与匹配的标签，或者使用 on 关键词来指定要参与匹配的标签。语法	如下：
-
-		<vector expr> <bin-op> ignoring(<label list>) <vector expr>
-		<vector expr> <bin-op> on(<label list>) <vector expr>
-		比如对于下面的输入：
-
-		method_code:http_errors:rate5m{method= "get", code="500"} 24
-		method_code:http_errors:rate5m{method= "get", code="404"} 30
-		method_code:http_errors:rate5m{method= "put", code="501"} 3
-		method_code:http_errors:rate5m{method= "post", code="500"} 6
-		method_code:http_errors:rate5m{method= "post", code="404"} 21
-
-		method:http_requests:rate5m{method= "get"} 600
-		method:http_requests:rate5m{method= "del"} 34
-		method:http_requests:rate5m{method= "post"} 120
-		执行下面的查询：
-
-		method_code:http_errors:rate5m{code="500"} / ignoring(code) method:http_requests:rate5m
-		得到的结果为：
-
-		{method= "get"} 0.04 // 24 / 600
-		{method= "post"} 0.05 // 6 / 120
-		也就是每一种 method 里 code 为 500 的请求数占总数的百分比。由于 method 为 put 和 del 的没有匹配元素所以没有出现在结果里。
-
-**b. many-to-one / one-to-many 向量匹配**
-
-	这种匹配模式下，某一边会有多个元素跟另一边的元素匹配。这时就需要使用 group_left 或 group_right 组修饰符来指明哪边匹配元素较多，左边多则用 group_left，右边多则用 group_right。其	语法如下：
-
-		<vector expr> <bin-op> ignoring(<label list>) group_left(<label list>) <vector expr>
-		<vector expr> <bin-op> ignoring(<label list>) group_right(<label list>) <vector expr>
-		<vector expr> <bin-op> on(<label list>) group_left(<label list>) <vector expr>
-		<vector expr> <bin-op> on(<label list>) group_right(<label list>) <vector expr>
-	组修饰符只适用于算术类和比较类操作符。
-
-	对于前面的输入，执行下面的查询：
-
-		method_code:http_errors:rate5m / ignoring(code) group_left method:http_requests:rate5m
-	将得到下面的结果：
-
-		{method= "get", code="500"} 0.04 // 24 / 600
-		{method= "get", code="404"} 0.05 // 30 / 600
-		{method= "post", code="500"} 0.05 // 6 / 120
-		{method= "post", code="404"} 0.175 // 21 / 120
-	也就是每种 method 的每种 code 错误次数占每种 method 请求数的比例。这里匹配的时候 ignoring 了 code，才使得两边可以形成 Many-to-one 形式的匹配。由于左边多，所以需要使用 		group_left 来指明。
-
-		Many-to-one / one-to-many 过于高级和复杂，要尽量避免使用。很多时候通过 ignoring 就可以解决问题。
-
 ### 5.1.5 聚合操作符及辅助函数
 	PromQL 提供了比较丰富的聚合操作符：sum（求和），min（最小值），max（最大值），avg（平均值），stddev（标准差），stdvar（方差），count（元素个数），count_values（等于某值的元素个数），bottomk（最小的 k 个元素），topk（最大的 k 个元素），quantile（分位数）等等。聚合操作符语法如下：
 		<aggr-op>([parameter,] <vector expression>) [without|by (<label list>)] 
 	eg：
-		sum(http_requests_total) without (instance)
-		sum(http_requests_total) by (application, group)
+		sum(node_memory_MemAvailable_bytes) without (instance)
+		sum(node_memory_MemAvailable_bytes) by (application, group)
 	Prometheus 内置了一些函数来辅助计算，如：abs(),sqrt(),exp(),ln(),ceil(),floor(),round(),delta(),sort()等等。
 
 
@@ -385,6 +306,12 @@ https://prometheus.io/docs/prometheus/latest/querying/basics/
 	query_result(query)         返回prometheus查询语句的查询结果
 	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
 			label_values(up, job)			
+<div padding="100px"><img src="./granfan- variables.png" width="90%" height="60%" padding="1000"></div>
+<div padding="100px"><img src="./dashboard-demo3.png" width="90%" height="60%" padding="1000"></div>
+
+
+## 6 demo
+	下面就是整个monitor最终的效果图了，具体的dashboard可以参考下面的link
 
 <div padding="100px"><img src="./dashboard-demo1.png" width="90%" height="60%" padding="1000"></div>
 <div padding="100px"><img src="./dashboard-demo2.png" width="90%" height="60%" padding="1000"></div>
