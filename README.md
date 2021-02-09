@@ -130,8 +130,10 @@ https://github.com/prometheus/node_exporter
 	    因为Prometheus只支持pull模式的方式去收集数据，所以我们需要通过声明Prometheus配置文件中的scrape_configs，
 	来指定Prometheus在运行时需要拉取指标的目标，目标实例需要实现一个可以被Prometheus进行轮询的端点接口，而Exporter正是用来提供这样接口的，
 	比如用来拉取操作系统指标的Node Exporter，它会从操作系统上收集硬件指标，供Prometheus来拉取。
+
+<div padding="100px"><img src="./monitor-deploy.png" width="90%" height="60%" padding="1000"></div>
+
 	    Prometheus pull时，可以通过static_configs参数配置静态配置目标，也可以使用受支持的服务发现机制之一动态发现目标。下面是一个完整的Prometheus配置：
-	
 	global:
 	  #How frequently to scrape targets
 	  scrape_interval:     15s # By default, scrape targets every 15 seconds.
@@ -306,7 +308,7 @@ https://prometheus.io/docs/prometheus/latest/querying/basics/
 	query_result(query)         返回prometheus查询语句的查询结果
 	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
 			label_values(up, job)			
-<div padding="100px"><img src="./granfan- variables.png" width="90%" height="60%" padding="1000"></div>
+<div padding="100px"><img src="./granfan-variables.png" width="90%" height="60%" padding="1000"></div>
 <div padding="100px"><img src="./dashboard-demo3.png" width="90%" height="60%" padding="1000"></div>
 
 
