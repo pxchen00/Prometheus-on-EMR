@@ -61,7 +61,10 @@ https://github.com/prometheus/node_exporter
 
 ### 3.2 JMX Exporter
 	JMX Exporter 是Prometheus生态系统中的一员，该采集器可以可配置地抓取和公开JMX目标的mBean。该Exporter作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
-	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标。我们同样需要在EMR集群的每台机器上进行配置，配置的方式和Node Exporter 一样，基于Bootstrap脚本进行，具体步骤如下：
+	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标。我们同样需要在EMR集群的每台机器上进行配置，配置的方式和Node Exporter 一样，基于Bootstrap脚本进行，
+https://github.com/prometheus/jmx_exporter
+
+	具体步骤如下：
 	
 **step 1: Download jmx_exporter release from original repo**
 
