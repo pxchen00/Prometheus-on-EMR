@@ -1,24 +1,26 @@
 # Prometheus在EMR上的实践
 
 
-
 ## 1. 什么是Prometheus
-	Prometheus(普罗米修斯)是一款非常好用的开源监控工具，我们大数据team在进行ETL处理时使用Prometheus+Grafana来对整个系统进行监控。
+	Prometheus(普罗米修斯)是一款非常好用的开源监控工具，FreeWheel大数据团队在搭建数据仓库的过程中，使用Prometheus+Grafana来对整个系统进行监控。
 	Prometheus支持多维度的指标数据模型，服务端通过HTTP协议定时拉取数据，然后给用户提供灵活的查询语言PromQL，实现监控的目的。客户端记录相关数据，
-	并提供对外查询接口，服务端则通过服务器发现客户端，并定时抓取形成时序数据存储起来，最后通过可视化工具加以展现，其整体架构如下图：
+	并提供对外查询接口，服务端则通过服务器发现客户端，并定时抓取时序数据，最后通过可视化工具加以展现。本文将从Prometheus监控的实例角度，
+	给大家讲述一下FreeWheel Transformer团队如何从零搭建起一套比较完整的监控系统。其官方的整体架构如下图：
 <div padding="100px"><img src="./architecture.png" width="80%" height="60%" padding="1000"></div>
+
+	
 
 ## 2. 什么是EMR集群
 	Amazon EMR 是一个托管集群平台，可简化在 AWS 上运行大数据框架（如 Apache Hadoop 和 Apache Spark）以处理和分析海量数据的操作
-	，Freewheel的Transformer team的Spark业务正是run 在EMR集群上的，由于我们核心服务都迁移到EMR上了，所以对EMR集群有一个实时的监控，
-	是非常重要的，比如磁盘的状态，内存的状态，集群是否稳定等等，都会对我们的pipeline 造成很大的影响；另一方面，我们也是为了能够充分的利用集群资源，
-	做好cost saving 也需要知道现在资源的利用率是否需要调整。
+	，Freewheel的Transformer 团队的Spark业务正是运行在EMR集群上的，由于我们核心服务都迁移到EMR上了，所以对EMR集群的实时监控非常重要，
+	比如磁盘，内存的实时状态，集群是否稳定等等都会对线上的Pipeline造成很大的影响；另一方面，为了充分利用集群资源，做好Cost-Saving
+	也需要知道当前EMR的系统资源利用率是否浪费或者不足，以便进行调整。关于EMR的具体介绍，可以学习一下我同事写的文章：
 	
-具体的可以看我同事写的一篇关于EMR的介绍https://github.com/pkexcellent/articles/blob/main/EMR%E5%AE%9E%E8%B7%B5/AWS%20EMR%E5%9C%A8Freewheel%E7%9A%84%E5%BA%94%E7%94%A8%E4%B8%8E%E5%AE%9E%E8%B7%B5.md
+https://github.com/pkexcellent/articles/blob/main/EMR%E5%AE%9E%E8%B7%B5/AWS%20EMR%E5%9C%A8FreeWheel%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md
 
 
 ## 3. 什么是Exporter
-	一般Prometheus提供监控数据的程序都可以成为一个exporter的，一个exporter的实例称为Target, 现有的Prometheus生态中Exporter可以在官网查看，非常丰富
+	一般Prometheus提供监控数据的程序都可以成为一个Exporter的，一个Exporter的实例称为Target, 现有的Prometheus生态中Exporter可以在官网查看，非常丰富
 https://prometheus.io/docs/instrumenting/exporters/
 
 ### 3.1 Node Exporter
@@ -59,8 +61,8 @@ https://github.com/prometheus/node_exporter
 
 
 ### 3.2 JMX Exporter
-	JMX到Prometheus导出器：一个采集器，该采集器可以可配置地抓取和公开JMX目标的mBean。该exporter旨在作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
-	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标。我们同样需要在EMR 集群的每台机器上进行配置，配置的方式和node exporter 一样，基于Bootstrap脚本进行，具体步骤如下：
+	JMX Exporter 是Prometheus生态系统中的一员，该采集器可以可配置地抓取和公开JMX目标的mBean。该Exporter作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 
+	它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标。我们同样需要在EMR集群的每台机器上进行配置，配置的方式和Node Exporter 一样，基于Bootstrap脚本进行，具体步骤如下：
 	
 **step 1: Download jmx_exporter release from original repo**
 
@@ -170,9 +172,9 @@ https://github.com/prometheus/node_exporter
 	
 **step 3: Add jmx_exporter's as javaagent in EMR Clsuter**
 
-	该exporter程序可以作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标，但这有许多缺点，
-	例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。因此我们将jmx exporter 运行程序和node node 以及data node 进行关联，将exporter程序作为Java代理运行。
-	具体的操作如下，我们需要在EMR 的configurations_json 里面进行如下配置：
+	该Exporter程序可以作为Java代理运行，公开HTTP服务器并提供本地JVM的度量。 它也可以作为独立的HTTP服务器运行，并scrape远程JMX目标，但这有许多缺点，
+	例如难以配置和无法公开进程指标（例如，内存和CPU使用率）。因此我们将jmx exporter 运行程序和Name Node 以及Data Node服务进行关联，将Exporter程序作为Java代理运行。
+	具体的操作如下，我们需要在EMR的configurations_json 里面进行如下配置：
 
 	{
 		"Classification":"hadoop-env",
@@ -189,18 +191,56 @@ https://github.com/prometheus/node_exporter
 	}
 
 
-
 ## 4. 如何收集EMR集群的指标
-	    因为Prometheus只支持pull模式的方式去收集数据，所以我们需要通过声明Prometheus配置文件中的scrape_configs，
-	来指定Prometheus在运行时需要拉取指标的目标，目标实例需要实现一个可以被Prometheus进行轮询的端点接口，而Exporter正是用来提供这样接口的，
-	比如用来拉取操作系统指标的Node Exporter，它会从操作系统上收集硬件指标，供Prometheus来拉取。
+	    因为Prometheus只支持pull模式的方式去收集数据，所以我们需要通过声明Prometheus配置文件中的scrape_configs，来指定Prometheus在运行时需要拉取指标的目标，
+	目标实例需要实现一个可以被Prometheus进行轮询的端点接口，而Exporter正是用来提供这样接口的，比如用来拉取操作系统指标的Node Exporter，
+	它会从操作系统上收集硬件指标，供Prometheus来Pull，具体的部署结构如下图所示：
 
 <div padding="100px"><img src="./monitor-deploy.png" width="60%" height="40%" padding="1000"></div>
 
-	    Prometheus pull时，可以通过static_configs参数配置静态配置目标，也可以使用受支持的服务发现机制之一动态发现目标。下面是一个完整的Prometheus配置：
+	我们需要搭建安装Prometheus，安装过程非常简单，大家可以参考下面的步骤：
+**step 1: Download Prometheus release from original repo**
+
+	#install Prometheus
+	sudo useradd --no-create-home --shell /bin/false prometheus
+	sudo mkdir -p /etc/prometheus/conf
+	sudo chown -R prometheus:prometheus /etc/prometheus
+	cd /tmp
+	wget https://github.com/prometheus/prometheus/releases/download/v2.20.0/prometheus-2.20.0.linux-amd64.tar.gz
+	tar xvf prometheus-2.20.0.linux-amd64.tar.gz
+	cd prometheus-2.20.0.linux-amd64
+	sudo cp prometheus /usr/local/bin/
+	sudo cp promtool /usr/local/bin/
+	sudo cp tsdb /usr/local/bin/
+	sudo cp -r consoles /etc/prometheus
+	sudo cp -r console_libraries /etc/prometheus
+	sudo chown prometheus:prometheus /usr/local/bin/prometheus
+	sudo chown prometheus:prometheus /usr/local/bin/promtool
+	sudo chown prometheus:prometheus /usr/local/bin/tsdb
+	sudo chown -R prometheus:prometheus /etc/prometheus/consoles
+	sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries
+
+**step 2: Add Prometheus's as systemd service**
+
+	[Unit]
+	Description=Prometheus
+	Wants=network-online.target
+	After=network-online.target
+
+	[Service]
+	User=prometheus
+	Group=prometheus
+	Type=simple
+	ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/conf/prometheus.yml --storage.tsdb.path=/var/lib/prometheus/ --web.console.templates=/etc/prometheus/consoles --web.console.libraries=/etc/prometheus/console_libraries
+
+	Restart=always
+
+	[Install]
+	WantedBy=multi-user.target
+
+**step 3: Config for Prometheus**
+
 	global:
-	
-	 
 	  #How frequently to scrape targets
 	  scrape_interval:     15s # By default, scrape targets every 15 seconds.
 
@@ -289,9 +329,18 @@ https://github.com/prometheus/node_exporter
 	      - source_labels: [__meta_ec2_tag_Service]
 		target_label: service
 		
-		
+	这里最重要的就是第3步， Prometheus pull时，可以通过static_configs参数配置的静态配置目标或者受支持的服务发现机制动态地发现目标。我们安装配置完之后，
+	可以通过Prometheus server的9090端口，查询具体的服务发现的结果，正常情况下会是这样：
 
-## 5. 数据的查询及可视化
+<div padding="100px"><img src="./promethus-service-discovery.png" width="90%" height="60%" padding="1000"></div>
+		
+	对于某些Exporter我们也可以访问具体的API 直接查看相关的metrics，这里以Graphate Exporter为例子，xxx.xxx.xxx.xxx:9108/metrics
+	
+<div padding="100px"><img src="./promethus-metrics.png" width="90%" height="60%" padding="1000"></div>
+
+	到这里整个Prometheus 监控架构基本都搭建完成了，接下来，我们需要看一下如何对采集到的metrics 进行查询。
+
+## 5. 数据的查询
 ### 5.1 PromQL
 	PromQL（Prometheus Query Language）是 Prometheus 自己开发的表达式语言，语言表现力很丰富，内置函数也很多。使用它可以对时序数据进行筛选和聚合。
 	PromQL 表达式计算出来的值有以下几种类型：
@@ -327,7 +376,7 @@ https://github.com/prometheus/node_exporter
 
 #### 5.3 操作符
 
-**a.算术类二元操作符**
+**a.算术类**
 
 	算术类二元操作符有以下几种：
 		+, -, *, /, %, ^
@@ -337,7 +386,7 @@ https://github.com/prometheus/node_exporter
 	向量与标量之间，相当于把标量跟向量里的每一个标量进行运算，这些计算结果组成了一个新的向量。
 	向量与向量之间，会稍微麻烦一些。运算的时候首先会为左边向量里的每一个元素在右边向量里去寻找一个匹配元素（匹配规则后面会讲），然后对这两个匹配元素执行计算，这样每对匹配元素的计算结果组成了一个新的向量。如果没有找到匹配元素，则该元素丢弃。
 
-**b.逻辑类二元操作符**
+**b.逻辑类**
 
 	逻辑操作符仅用于向量与向量之间,具体有：and(交集)，or(合集)，unless(补集)
 	规则如下：
@@ -376,9 +425,12 @@ https://prometheus.io/docs/prometheus/latest/querying/basics/
 	label_values(metric,label)  返回Promthues所有监控指标metric中，标签名为label的所有可选值
 	metrics(metric)	    	    返回所有指标名称满足metric定义正则表达式的指标名称
 	query_result(query)         返回prometheus查询语句的查询结果
+	
 	当需要监控Prometheus所有采集任务的状态时，可以使用如下方式获取当前所有采集任务的名称：
-			label_values(up, job)			
+			label_values(up, job)	
+			
 <div padding="100px"><img src="./granfan- variables.png" width="90%" height="60%" padding="1000"></div>
+
 <div padding="100px"><img src="./dashboard-demo3.png" width="90%" height="60%" padding="1000"></div>
 
 
