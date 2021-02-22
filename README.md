@@ -1,4 +1,4 @@
-# Prometheus在EMR上的实践
+# 从零开始在EMR上搭建Prometheus
 
 
 ## 1. 什么是Prometheus
